@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dealer {
+  id          String    @id @default(cuid())
+  name        String
+  city        String
+  phone       String
+  users       User[]
+  cars        Car[]
+  leads       Lead[]
+  createdAt   DateTime  @default(now())
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  role      Role     @default(BUYER)
+  dealerId  String?
+  dealer    Dealer?  @relation(fields: [dealerId], references: [id])
+  favorites Favorite[]
+  inquiries Lead[]
+  createdAt DateTime @default(now())
+}
+
+model Car {
+  id              String   @id @default(cuid())
+  dealerId        String
+  dealer          Dealer   @relation(fields: [dealerId], references: [id])
+  title           String
+  brand           String
+  model           String
+  year            Int
+  price           Int
+  kmDriven        Int
+  fuel            Fuel
+  transmission    Transmission
+  ownership       String
+  bodyType        String
+  city            String
+  color           String?
+  insurance       String?
+  description     String
+  aiSummary       Json?
+  images          CarImage[]
+  videos          CarVideo[]
+  status          CarStatus @default(ACTIVE)
+  featured        Boolean   @default(false)
+  negotiable      Boolean   @default(true)
+  rcVerified      Boolean   @default(false)
+  insuranceChecked Boolean  @default(false)
+  views           Int       @default(0)
+  whatsappClicks  Int       @default(0)
+  leads           Lead[]
+  favorites       Favorite[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model CarImage {
+  id        String @id @default(cuid())
+  carId     String
+  car       Car    @relation(fields: [carId], references: [id])
+  url       String
+  alt       String?
+  sortOrder Int    @default(0)
+}
+
+model CarVideo {
+  id        String @id @default(cuid())
+  carId     String
+  car       Car    @relation(fields: [carId], references: [id])
+  url       String
+  caption   String?
+  reelReady Boolean @default(false)
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  dealerId  String
+  dealer    Dealer     @relation(fields: [dealerId], references: [id])
+  carId     String?
+  car       Car?       @relation(fields: [carId], references: [id])
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id])
+  name      String?
+  phone     String?
+  message   String
+  source    LeadSource
+  status    LeadStatus @default(NEW)
+  intent    Intent     @default(WARM)
+  createdAt DateTime   @default(now())
+}
+
+model SellerSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  city      String
+  brand     String
+  model     String
+  year      Int
+  kmDriven  Int
+  expectedPrice Int?
+  aiPriceEstimate Int?
+  photos    Json?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+model WantedCar {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  city      String
+  query     String
+  budgetMin Int?
+  budgetMax Int?
+  matched   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model JsonStore {
+  key       String   @id
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Favorite {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  carId  String
+  car    Car    @relation(fields: [carId], references: [id])
+  @@unique([userId, carId])
+}
+
+enum Role {
+  BUYER
+  SELLER
+  DEALER_STAFF
+  DEALER_ADMIN
+  SUPER_ADMIN
+}
+
+enum Fuel {
+  PETROL
+  DIESEL
+  CNG
+  ELECTRIC
+}
+
+enum Transmission {
+  MANUAL
+  AUTOMATIC
+}
+
+enum CarStatus {
+  ACTIVE
+  SOLD
+  UPCOMING
+  ARCHIVED
+}
+
+enum LeadSource {
+  WEBSITE
+  WHATSAPP
+  SELLER_FORM
+  WANTED_CAR
+  SMART_SEARCH
+  REEL
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  NEGOTIATING
+  FOLLOW_UP
+  WON
+  LOST
+}
+
+enum Intent {
+  COLD
+  WARM
+  HOT
+}

@@ -1,0 +1,85 @@
+import { NextResponse } from "next/server";
+import { cars as defaultCars, type Car } from "@/lib/data";
+import { readJsonFile, saveUpload, writeJsonFile } from "@/lib/file-store";
+
+export const runtime = "nodejs";
+
+const fileName = "cars.json";
+const deletedFileName = "deleted-cars.json";
+
+export async function GET() {
+  const cars = await readJsonFile<Car[]>(fileName, []);
+  const deletedCarIds = await readJsonFile<string[]>(deletedFileName, []);
+  return NextResponse.json({ cars, deletedCarIds });
+}
+
+export async function POST(request: Request) {
+  const formData = await request.formData();
+  const existing = await readJsonFile<Car[]>(fileName, []);
+  const photos = formData.getAll("photos").filter((value): value is File => value instanceof File);
+  const image = await saveUpload(photos[0] ?? null, "cars");
+  const title = String(formData.get("carName") || "Used Car");
+  const brand = String(formData.get("brand") || title.split(" ")[0] || "Car");
+  const year = Number(formData.get("year") || new Date().getFullYear());
+
+  const car: Car = {
+    id: `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+    title,
+    brand,
+    model: title,
+    year,
+    price: Number(formData.get("price") || 0),
+    km: Number(formData.get("km") || 0),
+    fuel: normalizeFuel(String(formData.get("fuel") || "Petrol")),
+    transmission: normalizeTransmission(String(formData.get("transmission") || "Manual")),
+    ownership: String(formData.get("ownership") || "First owner"),
+    body: "Car",
+    city: String(formData.get("location") || "Ranchi"),
+    color: "Listed",
+    insurance: String(formData.get("insurance") || "Ask dealer"),
+    image: image || "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1400&q=85",
+    video: "",
+    views: 0,
+    valueScore: 88,
+    negotiable: true,
+    featured: false,
+    description: String(formData.get("description") || "Contact Auto Link for full vehicle details."),
+    badges: ["RC Verification", "Insurance Check", "Dealer Contact"]
+  };
+
+  const nextCars = [car, ...existing];
+  await writeJsonFile(fileName, nextCars);
+
+  return NextResponse.json({ ok: true, car });
+}
+
+export async function DELETE(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "Missing car id" }, { status: 400 });
+  }
+
+  const existing = await readJsonFile<Car[]>(fileName, []);
+  const nextCars = existing.filter((car) => car.id !== id);
+  await writeJsonFile(fileName, nextCars);
+
+  const deletedCarIds = await readJsonFile<string[]>(deletedFileName, []);
+  const isDefaultCar = defaultCars.some((car) => car.id === id);
+  const nextDeletedCarIds = isDefaultCar && !deletedCarIds.includes(id)
+    ? [id, ...deletedCarIds]
+    : deletedCarIds;
+  await writeJsonFile(deletedFileName, nextDeletedCarIds);
+
+  return NextResponse.json({ ok: true });
+}
+
+function normalizeFuel(value: string): Car["fuel"] {
+  if (value === "Diesel" || value === "CNG" || value === "Electric") return value;
+  return "Petrol";
+}
+
+function normalizeTransmission(value: string): Car["transmission"] {
+  return value === "Automatic" ? "Automatic" : "Manual";
+}

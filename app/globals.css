@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background: #050506;
+  color: #f4f5f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(40, 240, 212, 0.16), transparent 28rem),
+    radial-gradient(circle at 88% 24%, rgba(242, 184, 75, 0.12), transparent 24rem),
+    linear-gradient(180deg, #050506 0%, #0b0b0d 48%, #060607 100%);
+  color: #f4f5f7;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  content: "";
+  background-image:
+    linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.035) 42%, transparent 55%);
+  animation: scan 12s linear infinite;
+}
+
+@keyframes scan {
+  from { transform: translateX(-45%); }
+  to { transform: translateX(45%); }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.glass {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(145deg, rgba(255,255,255,0.105), rgba(255,255,255,0.035));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 70px rgba(0,0,0,0.32);
+  backdrop-filter: blur(22px);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+}
+
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+  animation: shimmer 1.8s infinite;
+}
+
+::selection {
+  color: #050506;
+  background: #93ff70;
+}
