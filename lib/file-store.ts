@@ -53,7 +53,15 @@ export async function saveUpload(file: File | null, folder: string) {
   if (!file || file.size === 0) return "";
 
   if (hasCloudinaryConfig()) {
-    return uploadToCloudinary(file, folder);
+    try {
+      return await uploadToCloudinary(file, folder);
+    } catch (error) {
+      console.error("Cloudinary upload failed, using fallback upload store", error);
+
+      if (isServerlessRuntime()) {
+        return fileToDataUrl(file);
+      }
+    }
   }
 
   if (isServerlessRuntime()) {
