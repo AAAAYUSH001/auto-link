@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   Camera,
@@ -8,11 +8,13 @@ import {
   ImagePlus,
   IndianRupee,
   LogOut,
+  Pencil,
   Plus,
   Save,
   Trash2,
   Upload,
-  UserRound
+  UserRound,
+  X
 } from "lucide-react";
 import { Badge, Button, Card } from "@/components/ui";
 import { cars as defaultCars, type Car } from "@/lib/data";
@@ -69,6 +71,8 @@ export default function AdminPage() {
   const [message, setMessage] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [listedCars, setListedCars] = useState<Car[]>([]);
+  const [editingCar, setEditingCar] = useState<Car | null>(null);
+  const carFormRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     async function loadAdminData() {
@@ -79,8 +83,10 @@ export default function AdminPage() {
       const leadsData = await leadsResponse.json();
       const carsData = await carsResponse.json();
       const deletedIds = new Set(carsData.deletedCarIds ?? []);
+      const savedCars = (carsData.cars ?? []) as Car[];
+      const savedIds = new Set(savedCars.map((car) => car.id));
       setLeads(leadsData.leads ?? []);
-      setListedCars([...(carsData.cars ?? []), ...defaultCars.filter((car) => !deletedIds.has(car.id))]);
+      setListedCars([...savedCars, ...defaultCars.filter((car) => !deletedIds.has(car.id) && !savedIds.has(car.id))]);
     }
 
     loadAdminData().catch(() => {
@@ -112,32 +118,59 @@ export default function AdminPage() {
     setGenerating(false);
   }
 
+  function clearCarForm() {
+    setEditingCar(null);
+    setCarName("");
+    setBrand("");
+    setYear("");
+    setPrice("");
+    setKm("");
+    setFuel("");
+    setTransmission("");
+    setOwnership("");
+    setInsurance("");
+    setLocation("Ranchi");
+    setDescription("");
+    carFormRef.current?.reset();
+  }
+
+  function editCar(car: Car) {
+    setEditingCar(car);
+    setCarName(car.title);
+    setBrand(car.brand);
+    setYear(String(car.year));
+    setPrice(String(car.price));
+    setKm(String(car.km));
+    setFuel(car.fuel);
+    setTransmission(car.transmission);
+    setOwnership(car.ownership);
+    setInsurance(car.insurance);
+    setLocation(car.city);
+    setDescription(car.description);
+    setMessage(`Editing ${car.title}. Save changes when ready.`);
+    carFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function saveCar(formData: FormData) {
     setSavingCar(true);
     setMessage("");
+    if (editingCar) {
+      formData.set("id", editingCar.id);
+    }
+
     const response = await fetch("/api/admin/cars", {
-      method: "POST",
+      method: editingCar ? "PUT" : "POST",
       body: formData
     });
     const data = await response.json();
     setSavingCar(false);
 
     if (data.ok) {
-      setMessage("Car saved. It will now show on the public car listings.");
-      setListedCars((current) => [data.car, ...current]);
-      setCarName("");
-      setBrand("");
-      setYear("");
-      setPrice("");
-      setKm("");
-      setFuel("");
-      setTransmission("");
-      setOwnership("");
-      setInsurance("");
-      setLocation("Ranchi");
-      setDescription("");
+      setMessage(editingCar ? "Car updated on the public listings." : "Car saved. It will now show on the public car listings.");
+      setListedCars((current) => [data.car, ...current.filter((car) => car.id !== data.car.id)]);
+      clearCarForm();
     } else {
-      setMessage("Could not save car. Please try again.");
+      setMessage(data.error || "Could not save car. Please try again.");
     }
   }
 
@@ -151,6 +184,9 @@ export default function AdminPage() {
 
     if (data.ok) {
       setListedCars((current) => current.filter((car) => car.id !== id));
+      if (editingCar?.id === id) {
+        clearCarForm();
+      }
       setMessage("Car removed from the main page.");
     } else {
       setMessage("Could not remove car. Please try again.");
@@ -193,8 +229,8 @@ export default function AdminPage() {
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <Badge className="mb-3">Admin</Badge>
-            <h1 className="text-4xl font-black">Upload Car</h1>
-            <p className="mt-2 text-white/62">Simple form to add cars and manage buyer/seller leads.</p>
+            <h1 className="text-4xl font-black">Admin Dashboard</h1>
+            <p className="mt-2 text-white/62">Add cars, update listings, and manage buyer/seller leads.</p>
           </div>
           <Button type="button" variant="ghost" onClick={logout}>
             <LogOut className="h-4 w-4" /> Logout
@@ -207,17 +243,19 @@ export default function AdminPage() {
               <CarFront className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Car Details</h2>
-              <p className="text-sm text-white/55">Fill important details, then generate description with Gemini.</p>
+              <h2 className="text-xl font-semibold">{editingCar ? "Edit Car Details" : "Car Details"}</h2>
+              <p className="text-sm text-white/55">
+                {editingCar ? "Update the listing details, then save changes." : "Fill important details, then generate description with Gemini."}
+              </p>
             </div>
           </div>
 
           <form
+            ref={carFormRef}
             className="space-y-6"
             onSubmit={(event) => {
               event.preventDefault();
               saveCar(new FormData(event.currentTarget));
-              event.currentTarget.reset();
             }}
           >
             <div className="grid gap-4 sm:grid-cols-2">
@@ -298,11 +336,17 @@ export default function AdminPage() {
 
             <div className="flex flex-col gap-3 border-t border-white/10 pt-6 sm:flex-row">
               <Button type="submit" className="sm:flex-1">
-                <Save className="h-4 w-4" /> {savingCar ? "Saving..." : "Save Car"}
+                <Save className="h-4 w-4" /> {savingCar ? "Saving..." : editingCar ? "Update Car" : "Save Car"}
               </Button>
-              <Button type="button" variant="ghost" className="sm:flex-1">
-                <Upload className="h-4 w-4" /> Save as Draft
-              </Button>
+              {editingCar ? (
+                <Button type="button" variant="ghost" className="sm:flex-1" onClick={clearCarForm}>
+                  <X className="h-4 w-4" /> Cancel Edit
+                </Button>
+              ) : (
+                <Button type="button" variant="ghost" className="sm:flex-1" onClick={() => setMessage("Draft saving is not enabled yet. Use Save Car to publish the listing.")}>
+                  <Upload className="h-4 w-4" /> Save as Draft
+                </Button>
+              )}
             </div>
             {message && <p className="rounded-lg border border-volt/25 bg-volt/10 p-3 text-sm text-volt">{message}</p>}
           </form>
@@ -311,11 +355,11 @@ export default function AdminPage() {
         <Card className="mt-8 p-5 sm:p-7">
           <div className="mb-5 flex items-center gap-3">
             <div className="rounded-lg bg-brass p-3 text-ink">
-              <Trash2 className="h-6 w-6" />
+              <Pencil className="h-6 w-6" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Remove Cars From Main Page</h2>
-              <p className="text-sm text-white/55">Delete a mistaken listing so it stops showing publicly.</p>
+              <h2 className="text-xl font-semibold">Listing Zone</h2>
+              <p className="text-sm text-white/55">Edit a listing or remove a car from the public page.</p>
             </div>
           </div>
           <div className="grid gap-3">
@@ -330,9 +374,14 @@ export default function AdminPage() {
                       {car.year} | {car.city} | INR {car.price.toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <Button type="button" variant="ghost" onClick={() => deleteCar(car.id)}>
-                    <Trash2 className="h-4 w-4" /> Remove
-                  </Button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button type="button" variant="subtle" onClick={() => editCar(car)}>
+                      <Pencil className="h-4 w-4" /> Edit
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => deleteCar(car.id)}>
+                      <Trash2 className="h-4 w-4" /> Remove
+                    </Button>
+                  </div>
                 </div>
               ))
             )}
