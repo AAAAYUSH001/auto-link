@@ -8,6 +8,7 @@ const uploadDir = path.join(process.cwd(), "public", "uploads");
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 const prisma = globalForPrisma.prisma ?? new PrismaClient();
+let jsonStoreReady: Promise<void> | null = null;
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
@@ -16,6 +17,7 @@ if (process.env.NODE_ENV !== "production") {
 export async function readJsonFile<T>(fileName: string, fallback: T): Promise<T> {
   if (shouldUseDatabaseStore()) {
     try {
+      await ensureJsonStoreTable();
       const record = await prisma.jsonStore.findUnique({ where: { key: fileName } });
       return (record?.data as T | undefined) ?? fallback;
     } catch (error) {
@@ -34,6 +36,7 @@ export async function readJsonFile<T>(fileName: string, fallback: T): Promise<T>
 
 export async function writeJsonFile<T>(fileName: string, data: T) {
   if (shouldUseDatabaseStore()) {
+    await ensureJsonStoreTable();
     await prisma.jsonStore.upsert({
       where: { key: fileName },
       update: { data: data as object },
@@ -51,6 +54,10 @@ export async function saveUpload(file: File | null, folder: string) {
 
   if (hasCloudinaryConfig()) {
     return uploadToCloudinary(file, folder);
+  }
+
+  if (isServerlessRuntime()) {
+    return fileToDataUrl(file);
   }
 
   await mkdir(path.join(uploadDir, folder), { recursive: true });
@@ -72,7 +79,24 @@ function hasCloudinaryConfig() {
 }
 
 function shouldUseDatabaseStore() {
-  return Boolean(process.env.DATABASE_URL && (process.env.VERCEL || process.env.USE_DATABASE_STORE === "true"));
+  return Boolean(process.env.DATABASE_URL && (isServerlessRuntime() || process.env.USE_DATABASE_STORE === "true"));
+}
+
+function isServerlessRuntime() {
+  return Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+}
+
+async function ensureJsonStoreTable() {
+  jsonStoreReady ??= prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "JsonStore" (
+      "key" TEXT PRIMARY KEY,
+      "data" JSONB NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).then(() => undefined);
+
+  return jsonStoreReady;
 }
 
 async function uploadToCloudinary(file: File, folder: string) {
@@ -103,4 +127,10 @@ async function uploadToCloudinary(file: File, folder: string) {
 
     stream.end(bytes);
   });
+}
+
+async function fileToDataUrl(file: File) {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const mimeType = file.type || "image/jpeg";
+  return `data:${mimeType};base64,${bytes.toString("base64")}`;
 }
