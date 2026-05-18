@@ -39,7 +39,7 @@ GEMINI_MODEL="gemini-2.0-flash"
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 USE_DATABASE_STORE="true"
 
-NEXT_PUBLIC_WHATSAPP_NUMBER="917000803"
+NEXT_PUBLIC_WHATSAPP_NUMBER="917004780803"
 
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-cloudinary-api-key"
@@ -76,6 +76,23 @@ This project does not need a separate Express backend. The backend is the Next.j
 5. Keep `USE_DATABASE_STORE=true` on Render so cars, deleted ids, and admin leads are written to PostgreSQL instead of local JSON files.
 6. Configure Cloudinary variables before using admin image uploads in production. Render's filesystem is not suitable as the permanent upload store.
 7. Redeploy the service after changing environment variables.
+
+Current Render backend:
+
+- Service: `auto-link-backend`
+- URL: `https://auto-link-backend.onrender.com`
+- Health check: `https://auto-link-backend.onrender.com/api/cars`
+
+## Vercel deployment
+
+The Vercel project is connected to this repository as `auto-link`. Pushes to `main` should trigger a Vercel redeploy when Git integration is enabled.
+
+Current Vercel production:
+
+- URL: `https://auto-link-amber.vercel.app`
+- Health check: `https://auto-link-amber.vercel.app/api/cars`
+
+Keep the same production environment variables on Vercel and Render so admin storage, uploads, AI generation, and WhatsApp contact flows behave consistently.
 
 ## Free-tier setup
 

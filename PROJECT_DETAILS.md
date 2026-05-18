@@ -110,13 +110,34 @@ Actual production capacity will still depend on the Neon database plan, Vercel p
 ## Current Deployment
 
 - GitHub repository: `AAAAYUSH001/auto-link`
-- Production host: Vercel
-- Production domain: `https://auto-link-amber.vercel.app`
-- Backend/API deployment option: Render Web Service using `render.yaml`
+- Git branch: `main`
+- Vercel production host: `https://auto-link-amber.vercel.app`
+- Vercel API health check: `https://auto-link-amber.vercel.app/api/cars`
+- Render Web Service: `auto-link-backend`
+- Render backend/API URL: `https://auto-link-backend.onrender.com`
+- Render API health check: `https://auto-link-backend.onrender.com/api/cars`
+- Render service id: `srv-d85ae977f7vs73aiga10`
+
+## Deployment Environment
+
+Required production variables on both Vercel and Render:
+
+- `NODE_ENV=production`
+- `NPM_CONFIG_PRODUCTION=false` on Render
+- `ADMIN_PASSWORD`
+- `ADMIN_SESSION_TOKEN`
+- `DATABASE_URL`
+- `USE_DATABASE_STORE=true`
+- `NEXT_PUBLIC_WHATSAPP_NUMBER=917004780803`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL=gemini-2.0-flash`
 
 
 ## Recent Update
 
 The admin listing zone now supports editing car listings. Admins can click Edit, update the form, save the changes, or cancel the edit. The public car API also avoids duplicate listings when a built-in listing is edited and saved.
 
-The project now includes Render backend deployment configuration. Render should run the same Next.js app with `npm ci && npm run build` and `npm run start -- -p $PORT`, with `NPM_CONFIG_PRODUCTION=false`, `USE_DATABASE_STORE=true`, and Cloudinary configured for reliable production uploads.
+The project now includes Render backend deployment configuration and a live Render service. Render runs the same Next.js app with `npm ci && npm run build` and `npm run start -- -p $PORT`, with `NPM_CONFIG_PRODUCTION=false`, `USE_DATABASE_STORE=true`, and Cloudinary configured for reliable production uploads. Vercel remains the public production website, and both Vercel and Render API health checks return car data.
