@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: auto-link-backend
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start -- -p $PORT
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: USE_DATABASE_STORE
+        value: "true"
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_SESSION_TOKEN
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: NEXT_PUBLIC_WHATSAPP_NUMBER
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

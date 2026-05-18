@@ -10,6 +10,7 @@ Premium AI-powered used car marketplace and dealership CRM for Ranchi and nearby
 - Admin CRM dashboard at `/admin`
 - API routes for leads, AI assistant, AI listing generation, search, and pricing estimate
 - Prisma PostgreSQL schema for dealers, users, cars, leads, seller submissions, wanted cars, favorites, images, and videos
+- Render backend deployment blueprint for the Next.js API routes
 - PWA manifest and local SEO metadata focused on Ranchi/Jharkhand
 
 ## Run locally
@@ -33,6 +34,7 @@ GEMINI_API_KEY="your-gemini-api-key"
 GEMINI_MODEL="gemini-2.0-flash"
 
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+USE_DATABASE_STORE="true"
 
 NEXT_PUBLIC_WHATSAPP_NUMBER="917000803"
 
@@ -58,14 +60,28 @@ Without `GEMINI_API_KEY`, AI routes return deterministic demo results so the pla
 - Add analytics persistence for views, clicks, and lead sources
 - Add dealer roles and permission guards around `/admin`
 
+## Render backend deployment
+
+This project does not need a separate Express backend. The backend is the Next.js API layer in `app/api`, so Render should deploy this same repository as a Node Web Service.
+
+1. Push the repository to GitHub.
+2. In Render, create a new Blueprint from this repo, or create a Web Service manually using:
+   - Build command: `npm ci && npm run build`
+   - Start command: `npm run start -- -p $PORT`
+3. Add the production environment variables from `.env.example`.
+4. Keep `USE_DATABASE_STORE=true` on Render so cars, deleted ids, and admin leads are written to PostgreSQL instead of local JSON files.
+5. Configure Cloudinary variables before using admin image uploads in production. Render's filesystem is not suitable as the permanent upload store.
+6. Redeploy the service after changing environment variables.
+
 ## Free-tier setup
 
 - Vercel: host the Next.js website and API routes
+- Render: optional Node Web Service host for the same Next.js frontend and API routes
 - Neon PostgreSQL: store cars and buyer/seller leads
 - Prisma: connect Next.js to Neon PostgreSQL
 - Cloudinary: store uploaded car and lead photos
 - Gemini API: generate car descriptions
 - Firebase: optional future phone/email authentication
-- Render: optional separate backend later if needed
+- Cloudinary: required for reliable production image uploads
 
 For local admin login, the default password is `sinha@7004780803` until `ADMIN_PASSWORD` is set in `.env.local`.
