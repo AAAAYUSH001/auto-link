@@ -27,6 +27,9 @@ Then open `http://localhost:3000`.
 Create `.env.local` when connecting real services:
 
 ```env
+NODE_ENV="production"
+NPM_CONFIG_PRODUCTION="false"
+
 ADMIN_PASSWORD="change-this-admin-password"
 ADMIN_SESSION_TOKEN="change-this-long-random-session-token"
 
@@ -69,9 +72,10 @@ This project does not need a separate Express backend. The backend is the Next.j
    - Build command: `npm ci && npm run build`
    - Start command: `npm run start -- -p $PORT`
 3. Add the production environment variables from `.env.example`.
-4. Keep `USE_DATABASE_STORE=true` on Render so cars, deleted ids, and admin leads are written to PostgreSQL instead of local JSON files.
-5. Configure Cloudinary variables before using admin image uploads in production. Render's filesystem is not suitable as the permanent upload store.
-6. Redeploy the service after changing environment variables.
+4. Keep `NPM_CONFIG_PRODUCTION=false` on Render so build-time packages such as Tailwind are installed during `npm ci`.
+5. Keep `USE_DATABASE_STORE=true` on Render so cars, deleted ids, and admin leads are written to PostgreSQL instead of local JSON files.
+6. Configure Cloudinary variables before using admin image uploads in production. Render's filesystem is not suitable as the permanent upload store.
+7. Redeploy the service after changing environment variables.
 
 ## Free-tier setup
 

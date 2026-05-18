@@ -62,6 +62,7 @@ Production on Render:
 - Deploy the same Next.js project as a Node Web Service; the backend is already in `app/api`
 - Use `render.yaml` as the Render Blueprint, or manually set the same build/start commands
 - Set `DATABASE_URL` and `USE_DATABASE_STORE=true` so admin cars and leads persist in PostgreSQL
+- Set `NPM_CONFIG_PRODUCTION=false` so Render installs build-time dependencies such as Tailwind during `npm ci`
 - Set Cloudinary variables before production uploads, because Render local disk should not be treated as permanent image storage
 - Redeploy the Render service after changing environment variables
 
@@ -118,4 +119,4 @@ Actual production capacity will still depend on the Neon database plan, Vercel p
 
 The admin listing zone now supports editing car listings. Admins can click Edit, update the form, save the changes, or cancel the edit. The public car API also avoids duplicate listings when a built-in listing is edited and saved.
 
-The project now includes Render backend deployment configuration. Render should run the same Next.js app with `npm ci && npm run build` and `npm run start -- -p $PORT`, with `USE_DATABASE_STORE=true` and Cloudinary configured for reliable production uploads.
+The project now includes Render backend deployment configuration. Render should run the same Next.js app with `npm ci && npm run build` and `npm run start -- -p $PORT`, with `NPM_CONFIG_PRODUCTION=false`, `USE_DATABASE_STORE=true`, and Cloudinary configured for reliable production uploads.
